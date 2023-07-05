@@ -17,7 +17,6 @@ class DatabaseIntegrityError(Exception):
 
 
 class PhoneBookRecord(BaseModel):
-    id: Optional[PositiveInt]
     name: str = Field(min_length=1, max_length=30)
     surname: str = Field(min_length=1, max_length=30)
     email: EmailStr
@@ -37,13 +36,12 @@ class PhoneBook:
         self._next_id = 1
 
     def add_record(self, record: PhoneBookRecord) -> PositiveInt:
-        record.id = self._next_id
-        self._records.append(record)
+        self._records.append([self._next_id, record])
         self._next_id += 1
-        return record.id
+        return self._next_id-1
 
     def update_record(self, id, record: PhoneBookRecord):
-        record_to_be_updated = self.get_record_by_id(id)
+        record_to_be_updated = self.get_record_by_id(id)[1]
         record_to_be_updated.name = record.name
         record_to_be_updated.surname = record.surname
         record_to_be_updated.email = record.email
@@ -51,13 +49,13 @@ class PhoneBook:
 
     def delete_record(self, record_id: int):
         record_to_be_deleted = self.get_record_by_id(record_id)
-        self._records.remove(record_to_be_deleted[0])
+        self._records.remove(record_to_be_deleted)
 
-    def get_records(self) -> list[PhoneBookRecord]:
+    def get_records(self) -> list[(PositiveInt, PhoneBookRecord)]:
         return self._records
 
-    def get_record_by_id(self, id: int) -> PhoneBookRecord:
-        matching_records = list(filter(lambda r: r.id == id, self._records))
+    def get_record_by_id(self, id: int) -> (PositiveInt, PhoneBookRecord):
+        matching_records = list(filter(lambda r: r[0] == id, self._records))
         records_found_count = len(matching_records)
         if records_found_count == 0:
             raise NotExistingRecordError(id)
